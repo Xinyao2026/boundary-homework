@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+set -euxo pipefail
+
+export DEBIAN_FRONTEND=noninteractive
+apt-get update
+apt-get install -y curl unzip ca-certificates
+
+if ! id boundary >/dev/null 2>&1; then
+  useradd --system --home /var/lib/boundary --shell /usr/sbin/nologin boundary
+fi
+
+mkdir -p /etc/boundary.d /var/lib/boundary
+chown -R boundary:boundary /var/lib/boundary
+
+curl -fsSLo /tmp/boundary.zip "https://releases.hashicorp.com/boundary/${boundary_version}/boundary_${boundary_version}_linux_amd64.zip"
+unzip -o /tmp/boundary.zip -d /usr/local/bin
+chmod 0755 /usr/local/bin/boundary
+
+cat >/etc/boundary.d/worker.hcl <<BOUNDARY_CONFIG
+disable_mlock = true
+hcp_boundary_cluster_id = "${boundary_cluster_id}"
+
+listener "tcp" {
+  purpose = "proxy"
+  address = "0.0.0.0:9202"
+}
+
+worker {
+  auth_storage_path = "/var/lib/boundary"
+  public_addr       = "${public_addr}"
+
+  controller_generated_activation_token = "${activation_token}"
+
+  tags {
+    type = ["ingress"]
+    env  = ["boundary-homework"]
+    name = ["${worker_name}"]
+  }
+}
+BOUNDARY_CONFIG
+
+cat >/etc/systemd/system/boundary.service <<'SYSTEMD'
+[Unit]
+Description=HashiCorp Boundary Worker
+Documentation=https://www.boundaryproject.io/docs/
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=boundary
+Group=boundary
+ExecStart=/usr/local/bin/boundary server -config /etc/boundary.d/worker.hcl
+Restart=on-failure
+RestartSec=5
+LimitMEMLOCK=infinity
+CapabilityBoundingSet=CAP_IPC_LOCK
+AmbientCapabilities=CAP_IPC_LOCK
+NoNewPrivileges=yes
+
+[Install]
+WantedBy=multi-user.target
+SYSTEMD
+
+systemctl daemon-reload
+systemctl enable --now boundary

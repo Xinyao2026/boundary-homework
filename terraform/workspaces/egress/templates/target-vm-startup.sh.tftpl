@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euxo pipefail
+
+export DEBIAN_FRONTEND=noninteractive
+apt-get update
+apt-get install -y ca-certificates
+
+if ! id "${target_ssh_user}" >/dev/null 2>&1; then
+  useradd --create-home --shell /bin/bash "${target_ssh_user}"
+fi
+
+install -d -m 0755 /etc/ssh
+
+cat >/etc/ssh/trusted-user-ca-keys.pem <<'SSH_CA'
+${trusted_user_ca_public_key}
+SSH_CA
+
+chmod 0644 /etc/ssh/trusted-user-ca-keys.pem
+
+cat >/etc/ssh/sshd_config.d/99-boundary-vault-ca.conf <<'SSHD_CONFIG'
+TrustedUserCAKeys /etc/ssh/trusted-user-ca-keys.pem
+SSHD_CONFIG
+
+systemctl restart ssh || systemctl restart sshd
