@@ -26,7 +26,7 @@ locals {
     layer    = "egress"
   }
 
-  psc_service_attachment_self_link = var.psc_service_attachment_self_link == null ? data.tfe_outputs.ingress[0].values.psc_service_attachment_self_link : var.psc_service_attachment_self_link
+  psc_service_attachment_self_link = var.psc_service_attachment_self_link == null ? data.tfe_outputs.ingress[0].nonsensitive_values.psc_service_attachment_self_link : var.psc_service_attachment_self_link
 }
 
 resource "google_project_service" "required" {
