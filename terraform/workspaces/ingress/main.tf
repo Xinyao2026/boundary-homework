@@ -148,11 +148,11 @@ resource "google_compute_instance" "ingress_worker" {
   }
 
   metadata_startup_script = templatefile("${path.module}/templates/ingress-worker-startup.sh.tftpl", {
-    boundary_cluster_id  = var.boundary_cluster_id
-    boundary_version     = var.boundary_version
-    activation_token     = boundary_worker.ingress.controller_generated_activation_token
-    public_addr          = "${google_compute_address.ingress_worker_public.address}:9202"
-    worker_name          = "${var.prefix}-ingress-worker"
+    boundary_cluster_id = var.boundary_cluster_id
+    boundary_version    = var.boundary_version
+    activation_token    = boundary_worker.ingress.controller_generated_activation_token
+    public_addr         = "${google_compute_address.ingress_worker_public.address}:9202"
+    worker_name         = "${var.prefix}-ingress-worker"
   })
 }
 
