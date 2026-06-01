@@ -25,3 +25,23 @@ output "target_vm_internal_ip" {
 output "target_ssh_user" {
   value = var.target_ssh_user
 }
+
+output "boundary_org_id" {
+  value = boundary_scope.org.id
+}
+
+output "boundary_project_id" {
+  value = boundary_scope.project.id
+}
+
+output "boundary_host_catalog_id" {
+  value = boundary_host_catalog_static.gce.id
+}
+
+output "boundary_target_id" {
+  value = boundary_target.ssh.id
+}
+
+output "boundary_compute_group_id" {
+  value = boundary_group.compute_ssh.id
+}

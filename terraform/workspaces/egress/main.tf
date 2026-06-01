@@ -111,6 +111,77 @@ resource "boundary_worker" "egress" {
   description = "Egress worker for Boundary homework"
 }
 
+resource "boundary_scope" "org" {
+  scope_id                 = "global"
+  name                     = var.boundary_org_name
+  description              = "Boundary homework organization"
+  auto_create_admin_role   = true
+  auto_create_default_role = true
+}
+
+resource "boundary_scope" "project" {
+  scope_id                 = boundary_scope.org.id
+  name                     = var.boundary_project_name
+  description              = "Boundary homework project"
+  auto_create_admin_role   = true
+  auto_create_default_role = true
+}
+
+resource "boundary_host_catalog_static" "gce" {
+  scope_id    = boundary_scope.project.id
+  name        = var.boundary_host_catalog_name
+  description = "Static catalog for Boundary homework GCE targets"
+}
+
+resource "boundary_host_static" "target_vm" {
+  host_catalog_id = boundary_host_catalog_static.gce.id
+  name            = var.boundary_host_name
+  description     = "GCE VM target for Boundary SSH access"
+  address         = google_compute_instance.target_vm.network_interface[0].network_ip
+}
+
+resource "boundary_host_set_static" "target_vms" {
+  host_catalog_id = boundary_host_catalog_static.gce.id
+  name            = var.boundary_host_set_name
+  description     = "GCE VM hosts reachable from the egress worker"
+  host_ids        = [boundary_host_static.target_vm.id]
+}
+
+resource "boundary_target" "ssh" {
+  scope_id                 = boundary_scope.project.id
+  type                     = "ssh"
+  name                     = var.boundary_target_name
+  description              = "SSH target for the Boundary homework GCE VM"
+  default_port             = 22
+  session_connection_limit = -1
+
+  host_source_ids = [
+    boundary_host_set_static.target_vms.id,
+  ]
+
+  ingress_worker_filter = "\"ingress\" in \"/tags/type\" and \"boundary-homework\" in \"/tags/env\""
+  egress_worker_filter  = "\"egress\" in \"/tags/type\" and \"boundary-homework\" in \"/tags/env\""
+}
+
+resource "boundary_group" "compute_ssh" {
+  scope_id    = boundary_scope.project.id
+  name        = var.boundary_compute_group_name
+  description = "Users allowed to connect to Boundary homework SSH targets"
+  member_ids  = var.boundary_compute_group_member_ids
+}
+
+resource "boundary_role" "compute_ssh" {
+  scope_id      = boundary_scope.project.id
+  name          = var.boundary_compute_role_name
+  description   = "Allow users to list and connect to the Boundary homework SSH target"
+  principal_ids = [boundary_group.compute_ssh.id]
+
+  grant_strings = [
+    "ids=*;type=target;actions=list,read,authorize-session",
+    "ids=*;type=session;actions=list,read,cancel:self",
+  ]
+}
+
 resource "google_compute_firewall" "allow_iap_ssh" {
   name    = "${var.prefix}-egress-allow-iap-ssh"
   network = google_compute_network.egress.name

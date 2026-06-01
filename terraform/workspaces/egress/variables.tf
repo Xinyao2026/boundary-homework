@@ -94,3 +94,57 @@ variable "trusted_user_ca_public_key" {
   type        = string
   default     = ""
 }
+
+variable "boundary_org_name" {
+  description = "Boundary org scope name for the homework resources."
+  type        = string
+  default     = "Hashicorp-org"
+}
+
+variable "boundary_project_name" {
+  description = "Boundary project scope name for the homework resources."
+  type        = string
+  default     = "Hashicorp-project"
+}
+
+variable "boundary_host_catalog_name" {
+  description = "Boundary static host catalog name."
+  type        = string
+  default     = "hashicorp-catalog-boundary"
+}
+
+variable "boundary_host_name" {
+  description = "Boundary static host name for the GCE target VM."
+  type        = string
+  default     = "ssh-target-hashicorp"
+}
+
+variable "boundary_host_set_name" {
+  description = "Boundary host set name for SSH targets."
+  type        = string
+  default     = "hashicorp-ssh-hosts"
+}
+
+variable "boundary_target_name" {
+  description = "Boundary SSH target name."
+  type        = string
+  default     = "ssh-hashicorp-target"
+}
+
+variable "boundary_compute_group_name" {
+  description = "Boundary group name for users allowed to connect to the SSH target."
+  type        = string
+  default     = "compute_ssh_groups"
+}
+
+variable "boundary_compute_group_member_ids" {
+  description = "Boundary user IDs to add to the compute SSH group. Add the admin user ID here when available."
+  type        = set(string)
+  default     = []
+}
+
+variable "boundary_compute_role_name" {
+  description = "Boundary role name that grants SSH target access."
+  type        = string
+  default     = "compute_ssh_role"
+}
