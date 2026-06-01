@@ -1,18 +1,3 @@
-provider "google" {
-  project = var.project_id
-  region  = var.region
-  zone    = var.zone
-}
-
-provider "boundary" {
-  addr                   = var.boundary_addr
-  auth_method_id         = var.boundary_auth_method_id
-  auth_method_login_name = var.boundary_login_name
-  auth_method_password   = var.boundary_password
-}
-
-provider "tfe" {}
-
 data "tfe_outputs" "ingress" {
   count        = var.psc_service_attachment_self_link == null ? 1 : 0
   organization = var.tfc_organization
