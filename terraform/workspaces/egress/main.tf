@@ -34,6 +34,7 @@ resource "google_project_service" "required" {
     "compute.googleapis.com",
     "iam.googleapis.com",
     "iamcredentials.googleapis.com",
+    "servicedirectory.googleapis.com",
     "serviceusage.googleapis.com",
     "sts.googleapis.com",
   ])
