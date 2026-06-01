@@ -1,3 +1,16 @@
+provider "google" {
+  project = var.project_id
+  region  = var.region
+  zone    = var.zone
+}
+
+provider "boundary" {
+  addr                   = var.boundary_addr
+  auth_method_id         = var.boundary_auth_method_id
+  auth_method_login_name = var.boundary_login_name
+  auth_method_password   = var.boundary_password
+}
+
 locals {
   labels = {
     app      = "boundary"
