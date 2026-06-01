@@ -186,7 +186,8 @@ resource "google_compute_region_backend_service" "ingress_proxy" {
   health_checks         = [google_compute_health_check.boundary_proxy.id]
 
   backend {
-    group = google_compute_instance_group.ingress_workers.id
+    group          = google_compute_instance_group.ingress_workers.id
+    balancing_mode = "CONNECTION"
   }
 }
 
