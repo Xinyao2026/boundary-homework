@@ -148,3 +148,58 @@ variable "boundary_compute_role_name" {
   type        = string
   default     = "compute_ssh_role"
 }
+
+variable "enable_vault_integration" {
+  description = "Enable HCP Vault Dedicated SSH certificate injection resources."
+  type        = bool
+  default     = false
+}
+
+variable "vault_addr" {
+  description = "HCP Vault Dedicated public URL, including https:// and :8200."
+  type        = string
+  default     = null
+}
+
+variable "vault_token" {
+  description = "HCP Vault Dedicated admin token used by Terraform to configure Vault."
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
+variable "vault_admin_namespace" {
+  description = "HCP Vault Dedicated admin namespace."
+  type        = string
+  default     = "admin"
+}
+
+variable "vault_boundary_namespace" {
+  description = "Vault namespace created under the admin namespace for Boundary."
+  type        = string
+  default     = "boundary-test"
+}
+
+variable "vault_ssh_mount_path" {
+  description = "Vault SSH secrets engine mount path."
+  type        = string
+  default     = "ssh-client-signer"
+}
+
+variable "vault_ssh_role_name" {
+  description = "Vault SSH signing role name used by Boundary."
+  type        = string
+  default     = "boundary-client"
+}
+
+variable "boundary_vault_credential_store_name" {
+  description = "Boundary Vault credential store name."
+  type        = string
+  default     = "vault-credential-store"
+}
+
+variable "boundary_vault_credential_library_name" {
+  description = "Boundary Vault SSH certificate credential library name."
+  type        = string
+  default     = "vault_ssh_boundary"
+}

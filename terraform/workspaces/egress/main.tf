@@ -13,6 +13,21 @@ provider "boundary" {
 
 provider "tfe" {}
 
+provider "vault" {
+  address          = var.vault_addr
+  token            = var.vault_token
+  namespace        = var.vault_admin_namespace
+  skip_child_token = true
+}
+
+provider "vault" {
+  alias            = "boundary"
+  address          = var.vault_addr
+  token            = var.vault_token
+  namespace        = local.vault_full_boundary_namespace
+  skip_child_token = true
+}
+
 data "tfe_outputs" "ingress" {
   count        = var.psc_service_attachment_self_link == null ? 1 : 0
   organization = var.tfc_organization
@@ -27,6 +42,10 @@ locals {
   }
 
   psc_service_attachment_self_link = var.psc_service_attachment_self_link == null ? data.tfe_outputs.ingress[0].nonsensitive_values.psc_service_attachment_self_link : var.psc_service_attachment_self_link
+
+  vault_full_boundary_namespace = "${var.vault_admin_namespace}/${var.vault_boundary_namespace}"
+  vault_ssh_signing_path        = "${var.vault_ssh_mount_path}/sign/${var.vault_ssh_role_name}"
+  trusted_user_ca_public_key    = var.enable_vault_integration ? vault_ssh_secret_backend_ca.boundary[0].public_key : var.trusted_user_ca_public_key
 }
 
 resource "google_project_service" "required" {
@@ -161,6 +180,10 @@ resource "boundary_target" "ssh" {
 
   ingress_worker_filter = "\"ingress\" in \"/tags/type\" and \"boundary-homework\" in \"/tags/env\""
   egress_worker_filter  = "\"egress\" in \"/tags/type\" and \"boundary-homework\" in \"/tags/env\""
+
+  injected_application_credential_source_ids = var.enable_vault_integration ? [
+    boundary_credential_library_vault_ssh_certificate.boundary[0].id,
+  ] : []
 }
 
 resource "boundary_group" "compute_ssh" {
@@ -180,6 +203,148 @@ resource "boundary_role" "compute_ssh" {
     "ids=*;type=target;actions=list,read,authorize-session",
     "ids=*;type=session;actions=list,read,cancel:self",
   ]
+}
+
+resource "vault_namespace" "boundary" {
+  count = var.enable_vault_integration ? 1 : 0
+
+  path = var.vault_boundary_namespace
+}
+
+resource "vault_mount" "ssh_client_signer" {
+  count    = var.enable_vault_integration ? 1 : 0
+  provider = vault.boundary
+
+  path        = var.vault_ssh_mount_path
+  type        = "ssh"
+  description = "SSH certificate signer for Boundary homework"
+
+  depends_on = [vault_namespace.boundary]
+}
+
+resource "vault_ssh_secret_backend_ca" "boundary" {
+  count    = var.enable_vault_integration ? 1 : 0
+  provider = vault.boundary
+
+  backend              = vault_mount.ssh_client_signer[0].path
+  generate_signing_key = true
+  key_type             = "ed25519"
+
+  depends_on = [vault_namespace.boundary]
+}
+
+resource "vault_ssh_secret_backend_role" "boundary_client" {
+  count    = var.enable_vault_integration ? 1 : 0
+  provider = vault.boundary
+
+  name                    = var.vault_ssh_role_name
+  backend                 = vault_mount.ssh_client_signer[0].path
+  key_type                = "ca"
+  allow_user_certificates = true
+  allowed_users           = var.target_ssh_user
+  default_user            = var.target_ssh_user
+  allowed_extensions      = "permit-pty"
+  default_extensions = {
+    permit-pty = ""
+  }
+  ttl     = "30m"
+  max_ttl = "1h"
+
+  depends_on = [vault_ssh_secret_backend_ca.boundary]
+}
+
+resource "vault_policy" "boundary_controller" {
+  count    = var.enable_vault_integration ? 1 : 0
+  provider = vault.boundary
+
+  name   = "boundary-controller"
+  policy = <<EOT
+path "auth/token/lookup-self" {
+  capabilities = ["read"]
+}
+
+path "auth/token/renew-self" {
+  capabilities = ["update"]
+}
+
+path "auth/token/revoke-self" {
+  capabilities = ["update"]
+}
+
+path "sys/leases/renew" {
+  capabilities = ["update"]
+}
+
+path "sys/leases/revoke" {
+  capabilities = ["update"]
+}
+
+path "sys/capabilities-self" {
+  capabilities = ["update"]
+}
+EOT
+
+  depends_on = [vault_namespace.boundary]
+}
+
+resource "vault_policy" "boundary_ssh" {
+  count    = var.enable_vault_integration ? 1 : 0
+  provider = vault.boundary
+
+  name   = "boundary-ssh"
+  policy = <<EOT
+path "${local.vault_ssh_signing_path}" {
+  capabilities = ["create", "update"]
+}
+EOT
+
+  depends_on = [
+    vault_namespace.boundary,
+    vault_ssh_secret_backend_role.boundary_client,
+  ]
+}
+
+resource "vault_token" "boundary" {
+  count    = var.enable_vault_integration ? 1 : 0
+  provider = vault.boundary
+
+  display_name      = "boundary-homework"
+  policies          = [vault_policy.boundary_controller[0].name, vault_policy.boundary_ssh[0].name]
+  no_default_policy = true
+  no_parent         = true
+  renewable         = true
+  period            = "24h"
+
+  depends_on = [
+    vault_policy.boundary_controller,
+    vault_policy.boundary_ssh,
+  ]
+}
+
+resource "boundary_credential_store_vault" "boundary" {
+  count = var.enable_vault_integration ? 1 : 0
+
+  scope_id    = boundary_scope.project.id
+  name        = var.boundary_vault_credential_store_name
+  description = "Vault credential store for Boundary SSH certificate injection"
+  address     = var.vault_addr
+  namespace   = local.vault_full_boundary_namespace
+  token       = vault_token.boundary[0].client_token
+}
+
+resource "boundary_credential_library_vault_ssh_certificate" "boundary" {
+  count = var.enable_vault_integration ? 1 : 0
+
+  credential_store_id = boundary_credential_store_vault.boundary[0].id
+  name                = var.boundary_vault_credential_library_name
+  description         = "Vault SSH certificate library for Boundary homework"
+  path                = local.vault_ssh_signing_path
+  username            = var.target_ssh_user
+  key_type            = "ed25519"
+  extensions = {
+    permit-pty = ""
+  }
+  ttl = "30m"
 }
 
 resource "google_compute_firewall" "allow_iap_ssh" {
@@ -271,7 +436,7 @@ resource "google_compute_instance" "target_vm" {
 
   metadata_startup_script = templatefile("${path.module}/templates/target-vm-startup.sh.tftpl", {
     target_ssh_user            = var.target_ssh_user
-    trusted_user_ca_public_key = var.trusted_user_ca_public_key
+    trusted_user_ca_public_key = local.trusted_user_ca_public_key
   })
 
   depends_on = [google_compute_router_nat.egress]
