@@ -70,10 +70,18 @@ data "google_compute_image" "ubuntu" {
   project = "ubuntu-os-cloud"
 }
 
+resource "terraform_data" "worker_reauth" {
+  triggers_replace = [var.worker_reauth_revision]
+}
+
 resource "boundary_worker" "ingress" {
   scope_id    = "global"
   name        = "${var.prefix}-ingress-worker"
   description = "Ingress worker for Boundary homework"
+
+  lifecycle {
+    replace_triggered_by = [terraform_data.worker_reauth]
+  }
 }
 
 resource "google_compute_firewall" "allow_iap_ssh" {
@@ -157,6 +165,10 @@ resource "google_compute_instance" "ingress_worker" {
 
   lifecycle {
     ignore_changes = [metadata_startup_script]
+    replace_triggered_by = [
+      boundary_worker.ingress,
+      terraform_data.worker_reauth,
+    ]
   }
 }
 

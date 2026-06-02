@@ -59,6 +59,12 @@ variable "boundary_version" {
   default     = "0.21.3+ent"
 }
 
+variable "worker_reauth_revision" {
+  description = "Bump this value to force replacement of the controller-led worker and VM so a fresh activation token is used."
+  type        = string
+  default     = "20260602-worker-reauth-1"
+}
+
 variable "ingress_vpc_cidr" {
   description = "Ingress VPC CIDR."
   type        = string
