@@ -56,7 +56,13 @@ variable "boundary_version" {
 variable "worker_reauth_revision" {
   description = "Bump this value to force replacement of the controller-led worker and VM so a fresh activation token is used."
   type        = string
-  default     = "20260603-psc-upstream-1"
+  default     = "20260603-psc-endpoint-recreate-1"
+}
+
+variable "psc_endpoint_recreate_revision" {
+  description = "Bump this value to force recreation of the consumer PSC endpoint when a producer service attachment was deleted and recreated."
+  type        = string
+  default     = "20260603-service-attachment-recreated-1"
 }
 
 variable "egress_vpc_cidr" {

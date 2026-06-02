@@ -99,6 +99,10 @@ resource "google_compute_address" "psc_endpoint" {
   address_type = "INTERNAL"
 }
 
+resource "terraform_data" "psc_endpoint_recreate" {
+  triggers_replace = [var.psc_endpoint_recreate_revision]
+}
+
 resource "google_compute_forwarding_rule" "psc_endpoint" {
   name                    = "${var.prefix}-psc-endpoint"
   region                  = var.region
@@ -108,6 +112,10 @@ resource "google_compute_forwarding_rule" "psc_endpoint" {
   target                  = local.psc_service_attachment_self_link
   load_balancing_scheme   = ""
   allow_psc_global_access = false
+
+  lifecycle {
+    replace_triggered_by = [terraform_data.psc_endpoint_recreate]
+  }
 }
 
 resource "google_service_account" "egress_worker" {

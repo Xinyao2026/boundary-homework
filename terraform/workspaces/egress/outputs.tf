@@ -10,6 +10,10 @@ output "psc_endpoint_ip" {
   value = google_compute_address.psc_endpoint.address
 }
 
+output "psc_endpoint_forwarding_rule_name" {
+  value = google_compute_forwarding_rule.psc_endpoint.name
+}
+
 output "egress_worker_internal_ip" {
   value = google_compute_instance.egress_worker.network_interface[0].network_ip
 }
