@@ -178,8 +178,7 @@ resource "boundary_target" "ssh" {
     boundary_host_set_static.target_vms.id,
   ]
 
-  ingress_worker_filter = "\"/name\" == \"${var.prefix}-ingress-worker\""
-  egress_worker_filter  = "\"/name\" == \"${var.prefix}-egress-worker\""
+  egress_worker_filter = "\"/name\" == \"${var.prefix}-egress-worker\""
 
   injected_application_credential_source_ids = var.enable_vault_integration ? [
     boundary_credential_library_vault_ssh_certificate.boundary[0].id,
