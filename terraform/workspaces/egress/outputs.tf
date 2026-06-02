@@ -14,6 +14,10 @@ output "egress_worker_internal_ip" {
   value = google_compute_instance.egress_worker.network_interface[0].network_ip
 }
 
+output "egress_worker_upstream_addr" {
+  value = local.egress_worker_upstream_addr
+}
+
 output "egress_worker_id" {
   value = boundary_worker.egress.id
 }

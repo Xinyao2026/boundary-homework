@@ -1,7 +1,7 @@
 variable "project_id" {
   description = "GCP project ID that hosts both Boundary worker VPCs for this lab."
   type        = string
-  default     = "hc-7b8a3d9e0a6949c7b4095d4d8b2"
+  default     = "hc-82e4f16a11f547f4b83356467c7"
 }
 
 variable "region" {
@@ -56,7 +56,7 @@ variable "boundary_version" {
 variable "worker_reauth_revision" {
   description = "Bump this value to force replacement of the controller-led worker and VM so a fresh activation token is used."
   type        = string
-  default     = "20260602-public-upstream-1"
+  default     = "20260603-psc-upstream-1"
 }
 
 variable "egress_vpc_cidr" {
@@ -90,7 +90,7 @@ variable "psc_service_attachment_self_link" {
 }
 
 variable "egress_worker_upstream_addr" {
-  description = "Optional upstream proxy address for the egress worker. If unset, the ingress worker public address from the ingress workspace outputs is used."
+  description = "Optional upstream proxy address for the egress worker. If unset, the PSC endpoint address in the egress VPC is used."
   type        = string
   default     = null
 }

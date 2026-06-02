@@ -1,7 +1,7 @@
 variable "project_id" {
   description = "GCP project ID that hosts both Boundary worker VPCs for this lab."
   type        = string
-  default     = "hc-7b8a3d9e0a6949c7b4095d4d8b2"
+  default     = "hc-82e4f16a11f547f4b83356467c7"
 }
 
 variable "region" {
