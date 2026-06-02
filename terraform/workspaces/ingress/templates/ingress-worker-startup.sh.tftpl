@@ -26,7 +26,6 @@ listener "tcp" {
 }
 
 worker {
-  name              = "${worker_name}"
   auth_storage_path = "/var/lib/boundary"
   public_addr       = "${public_addr}"
 
