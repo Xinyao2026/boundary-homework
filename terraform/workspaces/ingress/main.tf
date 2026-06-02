@@ -154,6 +154,10 @@ resource "google_compute_instance" "ingress_worker" {
     public_addr         = "${google_compute_address.ingress_worker_public.address}:9202"
     worker_name         = "${var.prefix}-ingress-worker"
   })
+
+  lifecycle {
+    ignore_changes = [metadata_startup_script]
+  }
 }
 
 resource "google_compute_instance_group" "ingress_workers" {

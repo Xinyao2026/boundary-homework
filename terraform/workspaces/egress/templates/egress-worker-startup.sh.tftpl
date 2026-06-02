@@ -25,6 +25,7 @@ listener "tcp" {
 }
 
 worker {
+  name              = "${worker_name}"
   auth_storage_path = "/var/lib/boundary"
   initial_upstreams = ["${upstream_addr}"]
 

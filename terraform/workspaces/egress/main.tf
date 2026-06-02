@@ -178,8 +178,8 @@ resource "boundary_target" "ssh" {
     boundary_host_set_static.target_vms.id,
   ]
 
-  ingress_worker_filter = "\"ingress\" in \"/tags/type\" and \"boundary-homework\" in \"/tags/env\""
-  egress_worker_filter  = "\"egress\" in \"/tags/type\" and \"boundary-homework\" in \"/tags/env\""
+  ingress_worker_filter = "\"/name\" == \"${var.prefix}-ingress-worker\""
+  egress_worker_filter  = "\"/name\" == \"${var.prefix}-egress-worker\""
 
   injected_application_credential_source_ids = var.enable_vault_integration ? [
     boundary_credential_library_vault_ssh_certificate.boundary[0].id,
@@ -403,6 +403,10 @@ resource "google_compute_instance" "egress_worker" {
     upstream_addr    = "${google_compute_address.psc_endpoint.address}:9202"
     worker_name      = "${var.prefix}-egress-worker"
   })
+
+  lifecycle {
+    ignore_changes = [metadata_startup_script]
+  }
 
   depends_on = [
     google_compute_router_nat.egress,
