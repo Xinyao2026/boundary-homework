@@ -193,16 +193,11 @@ resource "google_compute_instance_group" "ingress_workers" {
   }
 }
 
-resource "google_compute_region_health_check" "boundary_proxy" {
-  name   = "${var.prefix}-boundary-proxy-hc"
-  region = var.region
+resource "google_compute_health_check" "boundary_proxy" {
+  name = "${var.prefix}-boundary-proxy-hc"
 
   tcp_health_check {
     port = 9202
-  }
-
-  log_config {
-    enable = true
   }
 }
 
@@ -211,7 +206,7 @@ resource "google_compute_region_backend_service" "ingress_proxy" {
   region                = var.region
   protocol              = "TCP"
   load_balancing_scheme = "INTERNAL"
-  health_checks         = [google_compute_region_health_check.boundary_proxy.id]
+  health_checks         = [google_compute_health_check.boundary_proxy.id]
 
   backend {
     group          = google_compute_instance_group.ingress_workers.id
