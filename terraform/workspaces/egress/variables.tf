@@ -56,7 +56,7 @@ variable "boundary_version" {
 variable "worker_reauth_revision" {
   description = "Bump this value to force replacement of the controller-led worker and VM so a fresh activation token is used."
   type        = string
-  default     = "20260602-worker-reauth-2"
+  default     = "20260602-public-upstream-1"
 }
 
 variable "egress_vpc_cidr" {
@@ -85,6 +85,12 @@ variable "ingress_workspace_name" {
 
 variable "psc_service_attachment_self_link" {
   description = "Optional PSC service attachment self link. If unset, the value is read from the ingress workspace outputs."
+  type        = string
+  default     = null
+}
+
+variable "egress_worker_upstream_addr" {
+  description = "Optional upstream proxy address for the egress worker. If unset, the ingress worker public address from the ingress workspace outputs is used."
   type        = string
   default     = null
 }

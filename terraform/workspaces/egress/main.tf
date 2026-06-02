@@ -29,7 +29,7 @@ provider "vault" {
 }
 
 data "tfe_outputs" "ingress" {
-  count        = var.psc_service_attachment_self_link == null ? 1 : 0
+  count        = var.psc_service_attachment_self_link == null || var.egress_worker_upstream_addr == null ? 1 : 0
   organization = var.tfc_organization
   workspace    = var.ingress_workspace_name
 }
@@ -42,6 +42,7 @@ locals {
   }
 
   psc_service_attachment_self_link = var.psc_service_attachment_self_link == null ? data.tfe_outputs.ingress[0].nonsensitive_values.psc_service_attachment_self_link : var.psc_service_attachment_self_link
+  egress_worker_upstream_addr      = var.egress_worker_upstream_addr == null ? "${data.tfe_outputs.ingress[0].nonsensitive_values.ingress_worker_public_ip}:9202" : var.egress_worker_upstream_addr
 
   vault_full_boundary_namespace = "${var.vault_admin_namespace}/${var.vault_boundary_namespace}"
   vault_ssh_signing_path        = "${var.vault_ssh_mount_path}/sign/${var.vault_ssh_role_name}"
@@ -408,7 +409,7 @@ resource "google_compute_instance" "egress_worker" {
   metadata_startup_script = templatefile("${path.module}/templates/egress-worker-startup.sh.tftpl", {
     boundary_version = var.boundary_version
     activation_token = boundary_worker.egress.controller_generated_activation_token
-    upstream_addr    = "${google_compute_address.psc_endpoint.address}:9202"
+    upstream_addr    = local.egress_worker_upstream_addr
     worker_name      = "${var.prefix}-egress-worker"
   })
 
